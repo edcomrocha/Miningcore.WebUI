@@ -23,21 +23,21 @@
 
 
 // read WebURL from current browser
-var WebURL         = window.location.protocol + "//" + window.location.hostname + "/";  // Website URL is:  https://domain.com/
+var WebURL         = "https://api.gopool.cash/";  // Website URL is:  https://domain.com/
 // WebURL correction if not ends with /
 if (WebURL.substring(WebURL.length-1) != "/")
 {
 	WebURL = WebURL + "/";
 	console.log('Corrected WebURL, does not end with / -> New WebURL : ', WebURL);
 }
-var API            = WebURL + "api/";   						// API address is:  https://domain.com/api/
+var API            = WebURL ;   						// API address is:  https://domain.com/api/
 // API correction if not ends with /
 if (API.substring(API.length-1) != "/")
 {
 	API = API + "/";
 	console.log('Corrected API, does not end with / -> New API : ', API);
 } 
-var stratumAddress = window.location.hostname;           				// Stratum address is:  domain.com
+var stratumAddress = "gopool.cash";           				// Stratum address is:  domain.com
 
 
 
@@ -51,7 +51,7 @@ var stratumAddress = window.location.hostname;           				// Stratum address 
 // --------------------------------------------------------------------------------------------
 console.log('MiningCore.WebUI : ', WebURL);		                      // Returns website URL
 console.log('API address used : ', API);                                      // Returns API URL
-console.log('Stratum address  : ', "stratum+tcp://" + stratumAddress + ":");  // Returns Stratum URL
+console.log('Stratum address  : ', "stratum." + stratumAddress + ":");  // Returns Stratum URL
 console.log('Page Load        : ', window.location.href);                     // Returns full URL
 
 currentPage = "index"
@@ -156,7 +156,7 @@ function loadIndex() {
 // Load HOME page content
 function loadHomePage() {
   console.log('Loading home page content');
-  return $.ajax(API + "pools")
+  return $.ajax(API + "firopool")
     .done(function(data) {
       const poolCoinCardTemplate = $(".index-coin-card-template").html();
 	  //const poolCoinTableTemplate = "";  //$(".index-coin-table-template").html();
@@ -166,17 +166,17 @@ function loadHomePage() {
       $.each(data.pools, function(index, value) {
  
         var coinLogo = "<img class='coinimg' src='img/coin/icon/" + value.coin.type.toLowerCase() + ".png' />";
-		var coinName = value.coin.name;
-		if (typeof coinName === "undefined" || coinName === null) {coinName = value.coin.type;} 
+		var coinName = data.body.primary.config.coin;
+		if (typeof coinName === "undefined" || coinName === null) {coinName = data.body.primary.config.coin;} 
         		
-		poolCoinTableTemplate += "<tr class='coin-table-row' href='#" + value.id + "'>";
+		poolCoinTableTemplate += "<tr class='coin-table-row' href='#" + data.body.primary.config.coin + "'>";
 		poolCoinTableTemplate += "<td class='coin'><a href='#" + value.id + "'<span>" + coinLogo + coinName + " (" + value.coin.type.toUpperCase() + ") </span></a></td>";
-		poolCoinTableTemplate += "<td class='algo'>" + value.coin.algorithm + "</td>";
-		poolCoinTableTemplate += "<td class='miners'>" + value.poolStats.connectedMiners + "</td>";
-		poolCoinTableTemplate += "<td class='pool-hash'>" + _formatter(value.poolStats.poolHashrate, 5, "H/s") + "</td>";
-		poolCoinTableTemplate += "<td class='fee'>" + value.poolFeePercent + " %</td>";
-		poolCoinTableTemplate += "<td class='net-hash'>" + _formatter(value.networkStats.networkHashrate, 5, "H/s") + "</td>";
-		poolCoinTableTemplate += "<td class='net-diff'>" + _formatter(value.networkStats.networkDifficulty, 5, "") + "</td>";
+		poolCoinTableTemplate += "<td class='algo'>" + data.body.primary.config.algorithm + "</td>";
+		poolCoinTableTemplate += "<td class='miners'>" + data.body.primary.config.status.miners + "</td>";
+		poolCoinTableTemplate += "<td class='pool-hash'>" + _formatter(data.body.primary.hashrate.shared, 5, "H/s") + "</td>";
+		poolCoinTableTemplate += "<td class='fee'>" + data.body.primary.config.recipientFee + " %</td>";
+		poolCoinTableTemplate += "<td class='net-hash'>" + _formatter(data.body.primary.network.hashrate, 5, "H/s") + "</td>";
+		poolCoinTableTemplate += "<td class='net-diff'>" + _formatter(data.body.primary.network.difficulty, 5, "") + "</td>";
 		poolCoinTableTemplate += "<td class='card-btn col-hide'>Go Mine " + coinLogo + coinName + "</td>";
 		poolCoinTableTemplate += "</tr>";
       });
@@ -264,17 +264,17 @@ function loadDashboardPage() {
 
 // Load MINERS page content
 function loadMinersPage() {
-  return $.ajax(API + "pools/" + currentPool + "/miners?page=0&pagesize=20")
+  return $.ajax(API + "firopool/" + "/miners")
     .done(function(data) {
       var minerList = "";
       if (data.length > 0) {
         $.each(data, function(index, value) {
           minerList += "<tr>";
           //minerList +=   "<td>" + value.miner + "</td>";
-		  minerList +=   '<td>' + value.miner.substring(0, 12) + ' &hellip; ' + value.miner.substring(value.miner.length - 12) + '</td>';
+		  minerList +=   '<td>' + data.body.primary.shared.substring(0, 12) + ' &hellip; ' + data.body.primary.shared.substring(value.miner.length - 12) + '</td>';
           //minerList += '<td><a href="' + value.minerAddressInfoLink + '" target="_blank">' + value.miner.substring(0, 12) + ' &hellip; ' + value.miner.substring(value.miner.length - 12) + '</td>';
-          minerList += "<td>" + _formatter(value.hashrate, 5, "H/s") + "</td>";
-          minerList += "<td>" + _formatter(value.sharesPerSecond, 5, "S/s") + "</td>";
+          minerList += "<td>" + _formatter(data.body.primary.shared.hashrate, 5, "H/s") + "</td>";
+          minerList += "<td>" + _formatter(data.body.primary.shared.shares, 5, "S/s") + "</td>";
           minerList += "</tr>";
         });
       } else {
@@ -298,13 +298,13 @@ function loadMinersPage() {
 
 // Load BLOCKS page content
 function loadBlocksPage() {
-  return $.ajax(API + "pools/" + currentPool + "/blocks?page=0&pageSize=100")
+  return $.ajax(API + "firopool/" + "/blocks")
     .done(function(data) {
       var blockList = "";
       if (data.length > 0) {
         $.each(data, function(index, value) {
 		  var createDate = convertLocalDateToUTCDate(new Date(value.created),false);
-          var effort = Math.round(value.effort * 100);
+          var effort = Math.round(data.body.primary.confirmed.luck * 100);
           var effortClass = "";
           if (effort < 30) {
             effortClass = "effort1";
@@ -351,7 +351,7 @@ function loadBlocksPage() {
 
 // Load PAYMENTS page content
 function loadPaymentsPage() {
-  return $.ajax(API + "pools/" + currentPool + "/payments?page=0&pageSize=500")
+  return $.ajax(API + "firopool/" + "/payments?page=0&pageSize=500")
     .done(function(data) {
       var paymentList = "";
       if (data.length > 0) {
@@ -475,7 +475,7 @@ function loadWallet() {
   }
   var coin = window.location.hash.split(/[#/?]/)[1];
   var currentPage = window.location.hash.split(/[#/?]/)[2] || "stats";
-  window.location.href = "#" + currentPool + "/" + currentPage + "?address=" + $("#walletAddress").val();
+  window.location.href = "#" + "/" + currentPage + "?address=" + $("#walletAddress").val();
 }
 
 
@@ -591,7 +591,7 @@ function loadStatsData() {
 
 // STATS page charts
 function loadStatsChart() {
-  return $.ajax(API + "pools/" + currentPool + "/performance")
+  return $.ajax(API + "firopool/" + "/performance")
     .done(function(data) {
       labels = [];
 	  
@@ -674,7 +674,7 @@ function loadStatsChart() {
 
 // DASHBOARD page data
 function loadDashboardData(walletAddress) {
-  return $.ajax(API + "pools/" + currentPool + "/miners/" + walletAddress)
+  return $.ajax(API + "firopool/" + "/miners/" + walletAddress)
     .done(function(data) {
       $("#pendingShares").text(_formatter(data.pendingShares, 0, ""));
       var workerHashRate = 0;
@@ -705,7 +705,7 @@ function loadDashboardData(walletAddress) {
 
 // DASHBOARD page Miner table
 function loadDashboardWorkerList(walletAddress) {
-  return $.ajax(API + "pools/" + currentPool + "/miners/" + walletAddress)
+  return $.ajax(API + "firopool/" + "/miners/" + walletAddress)
     .done(function(data) {
       var workerList = "";
       if (data.performance) {
@@ -746,7 +746,7 @@ function loadDashboardWorkerList(walletAddress) {
 
 // DASHBOARD page chart
 function loadDashboardChart(walletAddress) {
-  return $.ajax(API + "pools/" + currentPool + "/miners/" + walletAddress + "/performance")
+  return $.ajax(API + "firopool/" + "/miners/" + walletAddress + "/performance")
     .done(function(data) {
 
 		labels = [];
@@ -851,7 +851,7 @@ function loadNavigation() {
       $("a.link").each(function() {
 	    if (localStorage[currentPool + "-walletAddress"] && this.href.indexOf("/dashboard") > 0)
 	    {
-		  this.href = "#" + currentPool + "/dashboard?address=" + localStorage[currentPool + "-walletAddress"];
+		  this.href = "#" + "/dashboard?address=" + localStorage[currentPool + "-walletAddress"];
 	    } 
       });
 
